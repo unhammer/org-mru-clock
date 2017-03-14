@@ -1,6 +1,6 @@
 ;;; org-mru-clock.el --- load most recently used clocks into history, provide selectors -*- lexical-binding: t -*-
 
-;; Copyright (C) 2016 Kevin Brubeck Unhammer
+;; Copyright (C) 2016--2017 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
 ;; Version: 0.1.0
