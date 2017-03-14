@@ -81,7 +81,7 @@ has enough entries."
   :type 'integer)
 
 (defcustom org-mru-clock-completing-read completing-read-function
-  "Like `completing-read-function', but only used in org-mru-clock functions."
+  "Like `completing-read-function', but only used in `org-mru-clock' functions."
   :group 'org-mru-clock
   :type 'function)
 
