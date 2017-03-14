@@ -1,11 +1,11 @@
-;;; org-mru-clock.el --- load most recently used clocks into history, provide selectors -*- lexical-binding: t -*-
+;;; org-mru-clock.el --- load most recently used clocks into history -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2016--2017 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "24.3"))
-;; Keywords: org, convenience, calendar
+;; Keywords: convenience, calendar
 
 ;; This file is not part of GNU Emacs.
 
@@ -94,7 +94,7 @@ has enough entries."
       (setq l (cdr l)))
     (reverse ret)))
 
-(defun org-mru-heading-marker (marker)
+(defun org-mru-clock-heading-marker (marker)
   "Turn MARKER into a marker of the heading at that spot.
 Used for uniquifying `org-mru-clock'."
   (when (marker-buffer marker)
@@ -137,7 +137,7 @@ N defaults to `org-mru-clock-how-many'."
                   ;; TODO: a bit hacky, might end up with <n (but uniq-ing is so slow)
                   (org-mru-clock-take (* n 3) sorted)
                   :test #'equal
-                  :key #'org-mru-heading-marker)))
+                  :key #'org-mru-clock-heading-marker)))
       (org-mru-clock-take n uniq))))
 
 ;;;###autoload
@@ -168,7 +168,7 @@ filled first.  Optional argument N as in `org-mru-clock'."
     (org-up-element)
     (org-show-subtree)))
 
-(defun org-mru-format-entry ()
+(defun org-mru-clock-format-entry ()
   "Return the parent heading of the current heading."
   (let* ((this (org-get-heading 'no-tags 'no-todo))
          (parent
@@ -194,7 +194,7 @@ Optional argument N as in `org-mru-clock'."
         (org-with-wide-buffer
          (ignore-errors
            (goto-char (marker-position i))
-           (push (cons (org-mru-format-entry) i) res)))))
+           (push (cons (org-mru-clock-format-entry) i) res)))))
     (let* ((l (reverse
                (mapcar #'substring-no-properties
                        (mapcar #'car res))))
@@ -211,4 +211,4 @@ Optional argument N as in `org-mru-clock'."
 
 
 (provide 'org-mru-clock)
-;;; org-mru-clock ends here
+;;; org-mru-clock.el ends here
