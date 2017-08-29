@@ -191,6 +191,47 @@ filled first.  Optional argument N as in `org-mru-clock'."
                         "")))
     (concat this parent-post)))
 
+(defun org-mru-clock--clock-in (task)
+  "Clock into the TASK (cons of description and marker)."
+  (let ((m (cdr task)))
+    (with-current-buffer
+        (org-base-buffer (marker-buffer m))
+      (org-with-wide-buffer
+       (goto-char (marker-position m))
+       (org-clock-in)))))
+
+(defun org-mru-clock--goto (task)
+  "Go to buffer and position of the TASK (cons of description and marker)."
+  (let ((m (cdr task)))
+    (switch-to-buffer (org-base-buffer (marker-buffer m)))
+    (org-with-wide-buffer
+     (goto-char (marker-position m))
+     (org-reveal))
+    (goto-char (marker-position m))))
+
+(eval-after-load 'ivy
+  '(ivy-set-actions 'org-mru-clock-in
+                    '(("g" org-mru-clock--goto "goto"))))
+
+(defun org-mru-clock--read (prompt collection action caller)
+  "Completing-read helper `org-mru-clock-in'.
+Support extra actions if we're using ivy.
+PROMPT and COLLECTION as in `completing-read',
+ACTION and CALLER as in `ivy-read'."
+  (if (eq org-mru-clock-completing-read #'ivy-completing-read)
+      (ivy-read prompt
+                collection
+                :action action
+                :require-match t
+                :caller caller)
+    (funcall action
+             (assoc (funcall org-mru-clock-completing-read
+                             prompt
+                             (mapcar #'car collection)
+                             nil
+                             'require-match)
+                    collection))))
+
 ;;;###autoload
 (defun org-mru-clock-in (&optional n)
   "Use ido to clock in to a task recently associated with clocking.
@@ -206,19 +247,16 @@ Optional argument N as in `org-mru-clock'."
          (ignore-errors
            (goto-char (marker-position i))
            (push (cons (org-mru-clock-format-entry) i) res)))))
-    (let* ((l (reverse
-               (mapcar #'substring-no-properties
-                       (mapcar #'car res))))
-           (task (cdr (assoc (funcall org-mru-clock-completing-read
-                                      "Recent clocks: "
-                                      l)
-                             res))))
-      (when task
-        (with-current-buffer
-            (org-base-buffer (marker-buffer task))
-          (org-with-wide-buffer
-           (goto-char (marker-position task))
-           (org-clock-in)))))))
+    (let ((prompt "Recent clocks: ")
+          ;; Remove string faces, put in the right order:
+          (collection (mapcar (lambda (kv)
+                                (setf (car kv) (substring-no-properties (car kv)))
+                                kv)
+                              (reverse res))))
+      (org-mru-clock--read prompt
+                           collection
+                           #'org-mru-clock--clock-in
+                           #'org-mru-clock-in))))
 
 
 (provide 'org-mru-clock)
