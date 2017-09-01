@@ -204,10 +204,12 @@ filled first.  Optional argument N as in `org-mru-clock'."
   "Go to buffer and position of the TASK (cons of description and marker)."
   (let ((m (cdr task)))
     (switch-to-buffer (org-base-buffer (marker-buffer m)))
-    (org-with-wide-buffer
-     (goto-char (marker-position m))
-     (org-reveal))
-    (goto-char (marker-position m))))
+    (goto-char
+     (org-with-wide-buffer
+      (goto-char (marker-position m))
+      (org-back-to-heading t)
+      (org-reveal)
+      (point)))))
 
 (eval-after-load 'ivy
   '(ivy-set-actions 'org-mru-clock-in
