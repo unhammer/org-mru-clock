@@ -116,7 +116,11 @@ Used for uniquifying `org-mru-clock'."
           (ignore-errors
             (goto-char marker)
             (org-back-to-heading t)
-            (point-marker)))))))
+            (let ((m (point-marker)))
+              ;; in hash maps at least, #'equal doesn't work for
+              ;; markers, so extract only what's relevant:
+              (cons (marker-position m)
+                    (marker-buffer m)))))))))
 
 (defun org-mru-clock-find-clocks (file)
   "Search through the given FILE and find all open clocks."
@@ -134,6 +138,21 @@ Used for uniquifying `org-mru-clock'."
                  clocks)))))
     clocks))
 
+(defun org-mru-clock-take-uniq (n l key test)
+  "Take the N first elements from L, skipping duplicates.
+Elements are duplicates if KEY of each element is equal under TEST."
+  (let* ((seen (make-hash-table :test test :size n))
+         ret
+         (_was-trimmed (catch 'done
+                         (dolist (e l)
+                           (let ((k (funcall key e)))
+                             (unless (gethash k seen)
+                               (push e ret))
+                             (puthash k e seen))
+                           (when (>= (hash-table-count seen) n)
+                             (throw 'done t))))))
+    (reverse ret)))
+
 (defun org-mru-clock (&optional n)
   "Find N most recently used clocks in `org-files-list'.
 N defaults to `org-mru-clock-how-many'."
@@ -142,13 +161,13 @@ N defaults to `org-mru-clock-how-many'."
            (n (or n org-mru-clock-how-many))
            (clocks (cl-mapcan #'org-mru-clock-find-clocks (org-files-list)))
            (sort-pred (lambda (a b) (time-less-p (cdr b)
-                                            (cdr a))))
+                                                 (cdr a))))
            (sorted (mapcar #'car (sort clocks sort-pred)))
-           (uniq (cl-remove-duplicates
-                  ;; TODO: a bit hacky, might end up with <n (but uniq-ing is so slow)
-                  (org-mru-clock-take (* n 3) sorted)
-                  :test #'equal
-                  :key #'org-mru-clock-heading-marker)))
+           (uniq (org-mru-clock-take-uniq
+                  n
+                  sorted
+                  #'org-mru-clock-heading-marker
+                  #'equal)))
       (org-mru-clock-take n uniq))))
 
 ;;;###autoload
