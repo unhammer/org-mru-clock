@@ -3,7 +3,7 @@
 ;; Copyright (C) 2016--2017 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
-;; Version: 0.1.1
+;; Version: 0.1.2
 ;; Package-Requires: ((emacs "24.3"))
 ;; Keywords: convenience, calendar
 
