@@ -1,1 +1,80 @@
-See org-mru-clock.el
+#+TITLE: org-mru-clock
+
+[[https://melpa.org/#/org-mru-clock][https://melpa.org/packages/org-mru-clock-badge.svg]]
+
+Do you often clock in to many different little tasks? Are you annoyed
+that you can't just clock in to one of your most recent tasks after
+restarting Emacs? This package lets you replace functions like
+=org-clock-select-task= and =org-clock-in-last= with the functions
+=org-mru-clock-select-recent-task= and =org-mru-clock-in=, which first
+ensure that =org-clock-history= is filled with your
+=org-mru-clock-how-many= most recent tasks, and then let you pick from
+a list before clocking in.
+
+It also uses =completing-read-function= (overridable with
+=org-mru-clock-completing-read=) on =org-mru-clock-in= to make
+clocking in even faster. If you set that to =ivy-completing-read=, you
+can hit =M-o g= to visit to the task heading instead of clocking in.
+
+* Installation
+
+** MELPA
+If you use [[https://melpa.org/][MELPA]], you can just do =M-x list-packages=, find
+=org-mru-clock= in the list and hit =i x=.
+
+** Manual
+Just put =org-mru-clock.el= somewhere in =load-path=.
+
+
+* Usage
+
+** Manual, loading on startup:
+
+To use, require and bind whatever keys you prefer to the
+interactive functions:
+
+#+BEGIN_SRC emacs-lisp
+(require 'org-mru-clocks)
+(global-set-key (kbd "C-c C-x i") #'org-mru-clock-in)
+(global-set-key (kbd "C-c C-x C-j") #'org-mru-clock-select-recent-task)
+#+END_SRC
+
+Maybe trade some initial slowness for more tasks cached:
+
+#+BEGIN_SRC emacs-lisp
+(setq org-mru-clock-how-many 100)
+#+END_SRC
+
+But don't set it higher than the actual number of tasks; then
+it'll always try (and fail) to fill up the history cache!
+
+If you want to use ivy for =org-mru-clock-in=:
+
+#+BEGIN_SRC emacs-lisp
+(setq org-mru-clock-completing-read #'ivy-completing-read)
+#+END_SRC
+
+** With use-package
+
+If you prefer =use-package=, the above settings would be:
+
+#+BEGIN_SRC emacs-lisp
+(use-package org-mru-clock
+  :ensure t
+  :bind* (("C-c C-x i" . org-mru-clock-in)
+          ("C-c C-x C-j" . org-mru-clock-select-recent-task))
+  :init
+  (setq org-mru-clock-how-many 100
+        org-mru-clock-completing-read #'ivy-completing-read))
+#+END_SRC
+
+** Related settings
+
+You may also be interested in these general org-clock settings
+([[http://orgmode.org/manual/Clocking-work-time.html][documented]] in the Org-mode manual):
+
+#+BEGIN_SRC emacs-lisp
+(setq org-clock-persist t)
+(org-clock-persistence-insinuate)
+#+END_SRC
+
