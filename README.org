@@ -4,17 +4,26 @@
 
 Do you often clock in to many different little tasks? Are you annoyed
 that you can't just clock in to one of your most recent tasks after
-restarting Emacs? This package lets you replace functions like
-=org-clock-select-task= and =org-clock-in-last= with the functions
-=org-mru-clock-select-recent-task= and =org-mru-clock-in=, which first
-ensure that =org-clock-history= is filled with your
-=org-mru-clock-how-many= most recent tasks, and then let you pick from
-a list before clocking in.
+restarting Emacs?
 
-It also uses =completing-read-function= (overridable with
+#+ATTR_HTML: :alt org-mru-clock demo
+[[file:org-mru-clock.gif][file:org-mru-clock.gif]]
+
+The function =org-mru-clock-in= from this package will pre-fill your
+clock history with clocks from your agenda files (and other open org
+files) so you can clock in to your most recent clocks regardless of
+whether you just started Emacs or have had it running for
+decades. Tasks are sorted by recency, and uses completing-read for
+quick selection. This makes it a nice replacement for
+=org-clock-in-last=.
+
+It uses =completing-read-function= (overridable with
 =org-mru-clock-completing-read=) on =org-mru-clock-in= to make
-clocking in even faster. If you set that to =ivy-completing-read=, you
-can hit =M-o g= to visit to the task heading instead of clocking in.
+clocking in faster. If you set that to =ivy-completing-read=, you can
+hit =M-o g= to visit to the task heading instead of clocking in.
+
+You can also use =org-mru-clock-select-recent-task= as a replacement
+for =org-clock-select-task=, again with pre-filled history.
 
 * Installation
 
