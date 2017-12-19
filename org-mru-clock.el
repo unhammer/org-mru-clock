@@ -40,7 +40,7 @@
 ;;; To use, require and bind whatever keys you prefer to the
 ;;; interactive functions:
 ;;;
-;;; (require 'org-mru-clocks)
+;;; (require 'org-mru-clock)
 ;;; (global-set-key (kbd "C-c C-x i") #'org-mru-clock-in)
 ;;; (global-set-key (kbd "C-c C-x C-j") #'org-mru-clock-select-recent-task)
 ;;;
