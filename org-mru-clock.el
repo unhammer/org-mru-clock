@@ -92,7 +92,8 @@ has enough entries."
   :type 'integer)
 
 (defcustom org-mru-clock-completing-read completing-read-function
-  "Like `completing-read-function', but only used in `org-mru-clock' functions."
+  "Like `completing-read-function', but only used in `org-mru-clock' functions.
+Popular choices include `ivy-completing-read' and `ido-completing-read'."
   :group 'org-mru-clock
   :type 'function)
 
@@ -255,7 +256,8 @@ ACTION and CALLER as in `ivy-read'."
 
 ;;;###autoload
 (defun org-mru-clock-in (&optional n)
-  "Use ido to clock in to a task recently associated with clocking.
+  "Use completion to clock in to a task recently associated with clocking.
+See `org-mru-clock-completing-read' for the completion function used.
 Optional argument N as in `org-mru-clock'."
   (interactive "P")
   (org-mru-clock-to-history n)
