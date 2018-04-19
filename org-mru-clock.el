@@ -102,6 +102,14 @@ Popular choices include `ivy-completing-read' and `ido-completing-read'."
   :group 'org-mru-clock
   :type 'boolean)
 
+(defcustom org-mru-clock-keep-formatting nil
+  "Keep faces (and other properties) from entries before showing them.
+If this is set to t, entries will show up using the faces they
+had in the org file.  If nil, use the regular face of the
+`org-mru-clock-completing-read' function."
+  :group 'org-mru-clock
+  :type 'boolean)
+
 (defun org-mru-clock-take (n l)
   "Take N elements from list L."
   (let (ret)
@@ -213,10 +221,11 @@ filled first.  Optional argument N as in `org-mru-clock'."
             (org-get-heading 'no-tags 'no-todo)))
          (parent-post (if parent
                           (format " (%s)" parent)
-                        "")))
-    ;; Remove org headline formatting:
-    (substring-no-properties
-     (concat this parent-post))))
+                        ""))
+         (with-parent (concat this parent-post)))
+    (if org-mru-clock-keep-formatting
+        with-parent
+      (substring-no-properties with-parent))))
 
 (defun org-mru-clock--clock-in (task)
   "Clock into the TASK (cons of description and marker)."
