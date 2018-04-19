@@ -3,7 +3,7 @@
 ;; Copyright (C) 2016--2018 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
-;; Version: 0.1.2
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "24.3"))
 ;; Keywords: convenience, calendar
 
@@ -96,6 +96,11 @@ has enough entries."
 Popular choices include `ivy-completing-read' and `ido-completing-read'."
   :group 'org-mru-clock
   :type 'function)
+
+(defcustom org-mru-clock-include-entry-at-point t
+  "If point is at an org headline, include it as the top choice."
+  :group 'org-mru-clock
+  :type 'boolean)
 
 (defun org-mru-clock-take (n l)
   "Take N elements from list L."
@@ -200,7 +205,7 @@ filled first.  Optional argument N as in `org-mru-clock'."
     (org-show-subtree)))
 
 (defun org-mru-clock-format-entry ()
-  "Return the parent heading of the current heading."
+  "Return the parent heading string appended to the heading at point."
   (let* ((this (org-get-heading 'no-tags 'no-todo))
          (parent
           (save-excursion
@@ -254,15 +259,11 @@ ACTION and CALLER as in `ivy-read'."
                              'require-match)
                     collection))))
 
-;;;###autoload
-(defun org-mru-clock-in (&optional n)
-  "Use completion to clock in to a task recently associated with clocking.
-See `org-mru-clock-completing-read' for the completion function used.
-Optional argument N as in `org-mru-clock'."
-  (interactive "P")
-  (org-mru-clock-to-history n)
-  (let (res
-        (history org-clock-history))
+(defun org-mru-clock--collect-history (history)
+  "Turn HISTORY into a collection usable for `completing-read'.
+HISTORY is e.g. `org-clock-history'.  Outputs a list of pairs of
+headline strings and markers."
+  (let (res)
     (dolist (i history)
       (with-current-buffer
           (org-base-buffer (marker-buffer i))
@@ -270,16 +271,44 @@ Optional argument N as in `org-mru-clock'."
          (ignore-errors
            (goto-char (marker-position i))
            (push (cons (org-mru-clock-format-entry) i) res)))))
-    (let ((prompt "Recent clocks: ")
-          ;; Remove string faces, put in the right order:
-          (collection (mapcar (lambda (kv)
-                                (setf (car kv) (substring-no-properties (car kv)))
-                                kv)
-                              (reverse res))))
-      (org-mru-clock--read prompt
-                           collection
-                           #'org-mru-clock--clock-in
-                           #'org-mru-clock-in))))
+    (reverse res)))
+
+(defun org-mru-clock--collect-entry-at-point ()
+  "Make a \"collection\" of a single entry with the heading at point.
+Return nil if we're not looking at an org heading. Works both for
+regular org files and the agenda. Output format should be the
+same as `org-mru-clock--collect-history'."
+  (when org-mru-clock-include-entry-at-point
+    (if (and (eq major-mode 'org-mode)
+             (eq (car (org-element-at-point)) 'headline))
+        (list (cons (org-mru-clock-format-entry) (point-marker)))
+      ;; If in agenda, first follow link to org file:
+      (when (eq major-mode 'org-agenda-mode)
+        (let ((m (org-get-at-bol 'org-hd-marker)))
+          (when m
+            (with-current-buffer (org-base-buffer (marker-buffer m))
+              (org-with-wide-buffer
+               (goto-char (marker-position m))
+               (org-mru-clock--collect-entry-at-point)))))))))
+
+;;;###autoload
+(defun org-mru-clock-in (&optional n)
+  "Use completion to clock in to a task recently associated with clocking.
+See `org-mru-clock-completing-read' for the completion function used.
+Optional argument N as in `org-mru-clock'."
+  (interactive "P")
+  (org-mru-clock-to-history n)
+  (let ((prompt "Recent clocks: ")
+        ;; Remove string faces, possibly include entry-at-point:
+        (collection (mapcar (lambda (kv)
+                              (setf (car kv) (substring-no-properties (car kv)))
+                              kv)
+                            (append (org-mru-clock--collect-entry-at-point)
+                                    (org-mru-clock--collect-history org-clock-history)))))
+    (org-mru-clock--read prompt
+                         collection
+                         #'org-mru-clock--clock-in
+                         #'org-mru-clock-in)))
 
 
 (provide 'org-mru-clock)
