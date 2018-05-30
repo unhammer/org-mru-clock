@@ -152,6 +152,39 @@ Used for uniquifying `org-mru-clock'."
                  clocks)))))
     clocks))
 
+(defun org-mru-clock-find-scheduled (file)
+  "Search through the given FILE and find all open clocks."
+  (let ((buf (or (get-file-buffer file)
+                 (find-file-noselect file)))
+        (org-clock-re (concat org-scheduled-string " \\(<.*?>\\)"))
+        clocks)
+    (with-current-buffer buf
+      (org-with-wide-buffer
+       (save-excursion
+         (goto-char (point-min))
+         (while (re-search-forward org-clock-re nil t)
+           (push (cons (copy-marker (match-end 1) t)
+                       (org-time-string-to-time (match-string 1)))
+                 clocks)))))
+    clocks))
+
+(defun org-mru-clock-filter-scheduled-future (clocks &optional future-days)
+  "Keep only future scheduled items.
+CLOCKS is as given by `org-mru-clock-find-scheduled'.  If
+FUTURE-DAYS is a positive integer, keep only clocks that are at
+most this many days into the future."
+  (let ((future-limit (when future-days
+                        (time-add (days-to-time future-days)
+                                  (current-time)))))
+    (cl-remove-if-not (lambda (c)
+                        (and (time-less-p (current-time) c)
+                             (or (not future-limit)
+                                 (time-less-p c
+                                              future-limit))))
+                  clocks
+                  :key #'cdr)))
+
+
 (defun org-mru-clock-take-uniq (n l key test)
   "Take the N first elements from L, skipping duplicates.
 Elements are duplicates if KEY of each element is equal under TEST."
