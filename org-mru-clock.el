@@ -252,6 +252,12 @@ filled first.  Optional argument N as in `org-mru-clock'."
   '(ivy-set-actions 'org-mru-clock-in
                     '(("g" org-mru-clock--goto "goto"))))
 
+;; and a default action for when there is no match: create a new task, using:
+(defcustom org-mru-clock-new-todo-matchers
+  "When there is no matching todo, make a new one using these matching rules."
+  :group 'org-mru-clock
+  :type 'alist)
+
 (defun org-mru-clock--read (prompt collection action caller)
   "Completing-read helper `org-mru-clock-in'.
 Support extra actions if we're using ivy.
