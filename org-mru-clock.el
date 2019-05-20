@@ -75,6 +75,7 @@
 ;;; Code:
 
 (require 'org-clock)
+(require 'org-capture)
 (require 'cl-lib)
 
 (defgroup org-mru-clock nil
@@ -228,14 +229,53 @@ filled first.  Optional argument N as in `org-mru-clock'."
         with-parent
       (substring-no-properties with-parent))))
 
+(defcustom org-mru-clock-capture-if-no-match nil
+  "If non-nil, `org-capture' a new task on non-matching input.
+If no task matches when doing `org-mru-clock-in', we may create a
+new one if this is non-nil.  The value should be an ordered
+association of regexes to a key from `org-capture-templates',
+e.g.
+
+ (setq org-mru-clock-capture-if-no-match '((\"^[0-9]+ \" . \"a\")
+                                           (\".*\" . \"b\")))
+
+will capture anything that starts with a number followed by space
+with the \"a\" template, and anything else with the \"b\"
+template.  The first matching regex is used."
+  :group 'org-mru-clock
+  :type '(alist :key-type string :value-type string))
+
+(defun org-mru-clock--capture (initial)
+  "Create a new task from the text entered.
+Match INITIAL using `org-mru-clock-capture-if-no-match' and use
+that as the %i capture text."
+  (let (matched)
+    (cl-loop for c
+             in org-mru-clock-capture-if-no-match
+             until matched
+             do
+             (when (string-match-p (car c) initial)
+               (setq matched t)
+               (let ((org-capture-initial initial))
+                 (org-capture nil (cdr c)))))
+    (unless matched
+      (error "`org-mru-clock--capture' called, but `org-mru-clock-capture-if-no-match' is nil"))))
+
 (defun org-mru-clock--clock-in (task)
-  "Clock into the TASK (cons of description and marker)."
-  (let ((m (cdr task)))
-    (with-current-buffer
-        (org-base-buffer (marker-buffer m))
-      (org-with-wide-buffer
-       (goto-char (marker-position m))
-       (org-clock-in)))))
+  "Clock into the TASK.
+
+TASK is a cons of description and marker if existing, otherwise a
+string."
+  (pcase task
+    ("") ; No input, assume user wants to cancel
+    ((pred stringp) (org-mru-clock--capture task))
+    (`(,h . ,m) ) (with-current-buffer
+                      (org-base-buffer (marker-buffer m))
+                    (org-with-wide-buffer
+                     (goto-char (marker-position m))
+                     (org-clock-in)))
+    (_ (error (format "org-mru-clock--clock-in called with TASK of unexpected type: %S"
+                      task)))))
 
 (defun org-mru-clock--goto (task)
   "Go to buffer and position of the TASK (cons of description and marker)."
@@ -252,37 +292,33 @@ filled first.  Optional argument N as in `org-mru-clock'."
   '(ivy-set-actions 'org-mru-clock-in
                     '(("g" org-mru-clock--goto "goto"))))
 
-;; and a default action for when there is no match: create a new task, using:
-(defcustom org-mru-clock-new-todo-matchers
-  "When there is no matching todo, make a new one using these matching rules."
-  :group 'org-mru-clock
-  :type 'alist)
-
 (defun org-mru-clock--read (prompt collection action caller)
   "Completing-read helper `org-mru-clock-in'.
 Support extra actions if we're using ivy.
 PROMPT and COLLECTION as in `completing-read',
 ACTION and CALLER as in `ivy-read'."
-  (cond
-   ((eq org-mru-clock-completing-read #'ivy-completing-read)
-    (ivy-read prompt
-              collection
-              :action action
-              :require-match t
-              :caller caller))
-   ((eq org-mru-clock-completing-read #'helm-comp-read)
-    (funcall action
-             (assoc (funcall org-mru-clock-completing-read
-                             prompt
-                             (mapcar #'car collection))
-                    collection)))
-   (t (funcall action
+  (let ((require-match (not org-mru-clock-capture-if-no-match)))
+    (cond
+     ((eq org-mru-clock-completing-read #'ivy-completing-read)
+      (ivy-read prompt
+                collection
+                :action action
+                :require-match require-match
+                :caller caller))
+     ((eq org-mru-clock-completing-read #'helm-comp-read)
+      ;; TODO: How do we require match with helm?
+      (funcall action
                (assoc (funcall org-mru-clock-completing-read
                                prompt
-                               (mapcar #'car collection)
-                               nil
-                               'require-match)
-                      collection)))))
+                               (mapcar #'car collection))
+                      collection)))
+     (t (funcall action
+                 (assoc (funcall org-mru-clock-completing-read
+                                 prompt
+                                 (mapcar #'car collection)
+                                 nil)
+                        collection)
+                 require-match)))))
 
 (defun org-mru-clock--collect-history (history)
   "Turn HISTORY into a collection usable for `completing-read'.
@@ -319,8 +355,11 @@ same as `org-mru-clock--collect-history'."
 ;;;###autoload
 (defun org-mru-clock-in (&optional n)
   "Use completion to clock in to a task recently associated with clocking.
-See `org-mru-clock-completing-read' for the completion function used.
-Optional argument N as in `org-mru-clock'."
+See `org-mru-clock-completing-read' for the completion function
+used.  Optional argument N as in `org-mru-clock'.
+
+If `org-mru-clock-capture-if-no-match' is non-nil, we may create
+a new task from the text entered."
   (interactive "P")
   (org-mru-clock-to-history n)
   (let* ((prompt "Recent clocks: ")

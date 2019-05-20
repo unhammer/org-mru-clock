@@ -31,6 +31,9 @@ can turn off this behaviour by setting
 You can also use =org-mru-clock-select-recent-task= as a replacement
 for =org-clock-select-task=, again with pre-filled history.
 
+You may also capture new tasks on the fly if your search text didn't
+match anything – try =C-h v org-mru-clock-capture-if-no-match RET=.
+
 * Installation
 
 ** MELPA
