@@ -267,15 +267,19 @@ that as the %i capture text."
 TASK is a cons of description and marker if existing, otherwise a
 string."
   (pcase task
-    ("") ; No input, assume user wants to cancel
-    ((pred stringp) (org-mru-clock--capture task))
-    (`(,h . ,m) ) (with-current-buffer
-                      (org-base-buffer (marker-buffer m))
-                    (org-with-wide-buffer
-                     (goto-char (marker-position m))
-                     (org-clock-in)))
-    (_ (error (format "org-mru-clock--clock-in called with TASK of unexpected type: %S"
-                      task)))))
+    ("" ;; No input, assume user wants to cancel
+     nil)
+    ((pred stringp)
+     (org-mru-clock--capture task))
+    (`(,h . ,m)
+     (with-current-buffer
+         (org-base-buffer (marker-buffer m))
+       (org-with-wide-buffer
+        (goto-char (marker-position m))
+        (org-clock-in))))
+    (_
+     (error (format "org-mru-clock--clock-in called with TASK of unexpected type: %S"
+                    task)))))
 
 (defun org-mru-clock--goto (task)
   "Go to buffer and position of the TASK (cons of description and marker)."
