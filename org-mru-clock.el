@@ -270,7 +270,10 @@ string."
     ("" ;; No input, assume user wants to cancel
      nil)
     ((pred stringp)
-     (org-mru-clock--capture task))
+     (org-mru-clock--capture task)
+     ;; Unless error, the above puts us in the CAPTURE buffer, so now
+     ;; we can simply clock in:
+     (org-clock-in))
     (`(,h . ,m)
      (with-current-buffer
          (org-base-buffer (marker-buffer m))
