@@ -115,16 +115,23 @@ had in the org file.  If nil, use the regular face of the
   "Function returning nil when the task at point should be excluded.
 If it returns non-nil, the task may be included in the clock
 history.  If this variable is nil, all previously clocked tasks
-in `org-files-list' are included.
+in `org-mru-clock-files' are included.
 
 To include only TODO tasks, set it to `org-entry-is-todo-p'.  To
 exclude DONE and ARCHIVED, set it to
 `org-mru-clock-exclude-done-and-archived'."
   :group 'org-mru-clock
+  :type '(choice (const nil) function))
+
+(defcustom org-mru-clock-files #'org-files-list
+  "Function returning org files to look for tasks in.
+You may want to set this to `org-agenda-files' to only include
+agenda files, or you can use your own file filter."
+  :group 'org-mru-clock
   :type 'function)
 
 (defun org-mru-clock-exclude-done-and-archived ()
-  "Example function for `org-mru-clock-predicate', excluding DONE and ARCHIVED."
+  "Example function for `org-mru-clock-predicate', excluding DONE and :ARCHIVE:."
   (not (or (org-entry-is-done-p)
            (member org-archive-tag (org-get-tags-at)))))
 
@@ -202,12 +209,12 @@ Elements are duplicates if KEY of each element is equal under TEST."
     (reverse ret)))
 
 (defun org-mru-clock (&optional n)
-  "Find N most recently used clocks in `org-files-list'.
+  "Find N most recently used clocks in `org-mru-clock-files'.
 N defaults to `org-mru-clock-how-many'."
   (unless org-clock-resolving-clocks
     (let* ((org-clock-resolving-clocks t)
            (n (or n org-mru-clock-how-many))
-           (clocks (cl-mapcan #'org-mru-clock--find-clocks (org-files-list)))
+           (clocks (cl-mapcan #'org-mru-clock--find-clocks (funcall org-mru-clock-files)))
            (sort-pred (lambda (a b) (time-less-p (cdr b)
                                                  (cdr a))))
            (sorted (mapcar #'car (sort clocks sort-pred)))
