@@ -322,15 +322,19 @@ ACTION and CALLER as in `ivy-read'."
 (defun org-mru-clock--collect-history (history)
   "Turn HISTORY into a collection usable for `completing-read'.
 HISTORY is e.g. `org-clock-history'.  Outputs a list of pairs of
-headline strings and markers."
-  (let (res)
+headline strings and markers.
+Filters out markers not in `org-mru-clock-files'."
+  (let ((files (funcall org-mru-clock-files))
+        res)
     (dolist (i history)
-      (with-current-buffer
-          (org-base-buffer (marker-buffer i))
-        (org-with-wide-buffer
-         (ignore-errors
-           (goto-char (marker-position i))
-           (push (cons (org-mru-clock-format-entry) i) res)))))
+      (let* ((buf (marker-buffer i))
+             (file (buffer-file-name buf)))
+        (when (cl-member file files :test #'file-equal-p)
+          (with-current-buffer (org-base-buffer buf)
+            (org-with-wide-buffer
+             (ignore-errors
+               (goto-char (marker-position i))
+               (push (cons (org-mru-clock-format-entry) i) res)))))))
     (reverse res)))
 
 (defun org-mru-clock--collect-entry-at-point ()
