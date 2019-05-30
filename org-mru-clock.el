@@ -111,6 +111,25 @@ had in the org file.  If nil, use the regular face of the
   :group 'org-mru-clock
   :type 'boolean)
 
+(defcustom org-mru-clock-predicate nil
+  "Function returning nil when the task at point should be excluded.
+If it returns non-nil, the task may be included in the clock
+history.  If this variable is nil, all previously clocked tasks
+in `org-files-list' are included.
+
+To include only TODO tasks, set it to `org-entry-is-todo-p'.  To
+exclude DONE and ARCHIVED, set it to
+`org-mru-clock-exclude-done-and-archived'."
+  :group 'org-mru-clock
+  :type 'function)
+
+(defun org-mru-clock-exclude-done-and-archived ()
+  "Example function for `org-mru-clock-predicate', excluding DONE and ARCHIVED."
+  (not (or (org-entry-is-done-p)
+           (member org-archive-tag (org-get-tags-at)))))
+
+(setq org-mru-clock-predicate #'org-entry-is-todo-p)
+
 (defun org-mru-clock-take (n l)
   "Take N elements from list L."
   (let (ret)
@@ -137,7 +156,7 @@ Used for uniquifying `org-mru-clock'."
               (cons (marker-position m)
                     (marker-buffer m)))))))))
 
-(defun org-mru-clock-find-clocks (file)
+(defun org-mru-clock--find-clocks (file)
   "Search through the given FILE and find all open clocks."
   (let ((buf (or (get-file-buffer file)
                  (find-file-noselect file)))
@@ -148,10 +167,24 @@ Used for uniquifying `org-mru-clock'."
        (save-excursion
          (goto-char (point-min))
          (while (re-search-forward org-clock-re nil t)
-           (push (cons (copy-marker (match-end 1) t)
-                       (org-time-string-to-time (match-string 1)))
-                 clocks)))))
+           (when (org-mru-clock--predicate)
+             (push (cons (copy-marker (match-end 1) t)
+                         (org-time-string-to-time (match-string 1)))
+                   clocks))))))
     clocks))
+
+(defun org-mru-clock--predicate (&optional marker)
+  "Call `org-mru-clock-predicate' if set, restoring point and match data.
+Default to t if not set.  If MARKER, first go to the marker."
+  (if (functionp org-mru-clock-predicate)
+      (save-match-data
+        (save-excursion
+          (if marker
+              (with-current-buffer (marker-buffer marker)
+                (goto-char marker)
+                (funcall org-mru-clock-predicate))
+            (funcall org-mru-clock-predicate))))
+    t))
 
 (defun org-mru-clock-take-uniq (n l key test)
   "Take the N first elements from L, skipping duplicates.
@@ -174,7 +207,7 @@ N defaults to `org-mru-clock-how-many'."
   (unless org-clock-resolving-clocks
     (let* ((org-clock-resolving-clocks t)
            (n (or n org-mru-clock-how-many))
-           (clocks (cl-mapcan #'org-mru-clock-find-clocks (org-files-list)))
+           (clocks (cl-mapcan #'org-mru-clock--find-clocks (org-files-list)))
            (sort-pred (lambda (a b) (time-less-p (cdr b)
                                                  (cdr a))))
            (sorted (mapcar #'car (sort clocks sort-pred)))
@@ -194,7 +227,8 @@ Optional argument N as in `org-mru-clock'."
   (let ((n (cond ((and n (listp n)) (car n))
                  ((numberp n) n)
                  (t org-mru-clock-how-many)))
-        (history (cl-remove-if (lambda (m) (not (marker-buffer m)))
+        (history (cl-remove-if-not (lambda (m) (and (marker-buffer m)
+                                                    (org-mru-clock--predicate m)))
                                org-clock-history)))
     (setq org-clock-history (if (< (length history) n)
                                 (org-mru-clock n)
