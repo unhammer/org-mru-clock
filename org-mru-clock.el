@@ -119,7 +119,8 @@ in `org-mru-clock-files' are included.
 
 To include only TODO tasks, set it to `org-entry-is-todo-p'.  To
 exclude DONE and ARCHIVED, set it to
-`org-mru-clock-exclude-done-and-archived'."
+`org-mru-clock-exclude-done-and-archived'.  Note that this can
+affect speed, if you have large org files."
   :group 'org-mru-clock
   :type '(choice (const nil) function))
 

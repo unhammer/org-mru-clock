@@ -100,6 +100,20 @@ If you do
 then the entry at point will /not/ be prepended to the start of the
 list.
 
+By default, all open =org-mode= files are searched for recent clocks,
+but you can change this to e.g. only the =org-agenda-files= with
+#+BEGIN_SRC emacs-lisp
+  (setq org-mru-clock-files #'org-agenda-files)
+#+END_SRC
+or some other function of your own devising.
+
+You can also exclude clocks by setting =org-mru-clock-predicate= to
+e.g. =org-entry-is-todo-p= (which will exclude DONE tasks) or
+=org-mru-clock-exclude-done-and-archived= (which will also exclude
+those tagged with =org-archive-tag=).
+
+
+
 ** Related settings from org-clock
 
 You may also be interested in these general org-clock settings
