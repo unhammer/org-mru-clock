@@ -313,19 +313,20 @@ ACTION and CALLER as in `ivy-read'."
                 :require-match require-match
                 :caller caller))
      ((eq org-mru-clock-completing-read #'helm-comp-read)
-      ;; TODO: How do we require match with helm?
-      (funcall action
-               (assoc (funcall org-mru-clock-completing-read
-                               prompt
-                               (mapcar #'car collection))
-                      collection)))
-     (t (funcall action
-                 (assoc (funcall org-mru-clock-completing-read
-                                 prompt
-                                 (mapcar #'car collection)
-                                 nil)
-                        collection)
-                 require-match)))))
+      (let* ((choice (helm-comp-read
+                      prompt
+                      (mapcar #'car collection)
+                      :must-match require-match))
+             (match (assoc choice collection)))
+        (funcall action (or match choice))))
+     (t          ; assume arguments compatible with `completing-read':
+      (let* ((choice (funcall org-mru-clock-completing-read
+                              prompt
+                              (mapcar #'car collection)
+                              nil      ; PREDICATE
+                              require-match))
+             (match (assoc choice collection)))
+        (funcall action (or match choice)))))))
 
 (defun org-mru-clock--collect-history (history)
   "Turn HISTORY into a collection usable for `completing-read'.
