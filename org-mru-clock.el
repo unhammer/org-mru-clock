@@ -261,6 +261,15 @@ that as the %i capture text."
     (unless matched
       (error "`org-mru-clock--capture' called, but `org-mru-clock-capture-if-no-match' is nil"))))
 
+(defun org-mru-clock--clock-in-on-marker (marker)
+  "Go to MARKER and clock in to the task there.
+May temporarily widen the buffer."
+  (with-current-buffer
+      (org-base-buffer (marker-buffer marker))
+    (org-with-wide-buffer
+     (goto-char (marker-position marker))
+     (org-clock-in))))
+
 (defun org-mru-clock--clock-in (task)
   "Clock into the TASK.
 
@@ -271,15 +280,15 @@ string."
      nil)
     ((pred stringp)
      (org-mru-clock--capture task)
-     ;; Unless error, the above puts us in the CAPTURE buffer, so now
-     ;; we can simply clock in:
-     (org-clock-in))
+     ;; If we immediately finish, `org-capture-finalize' will store a
+     ;; marker for us. Otherwise, the above puts us in the CAPTURE
+     ;; buffer, so now we can simply clock in. If there was an error
+     ;; in capturing, the below won't even execute.
+     (if (org-capture-get :immediate-finish)
+         (org-mru-clock--clock-in-on-marker org-capture-last-stored-marker)
+       (org-clock-in)))
     (`(,h . ,m)
-     (with-current-buffer
-         (org-base-buffer (marker-buffer m))
-       (org-with-wide-buffer
-        (goto-char (marker-position m))
-        (org-clock-in))))
+     (org-mru-clock--clock-in-on-marker m))
     (_
      (error (format "org-mru-clock--clock-in called with TASK of unexpected type: %S"
                     task)))))
