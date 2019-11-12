@@ -345,9 +345,35 @@ string."
     (org-cycle-hide-drawers 'children)
     (org-reveal)))
 
+(defun org-mru-clock--add-note (task)
+  "Add a time-stamped note to TASK (cons of description and marker)."
+  (let* ((marker (cdr task))
+	 (buffer (marker-buffer marker))
+	 (pos (marker-position marker))
+	 (inhibit-read-only t))
+    (with-current-buffer buffer
+      (widen)
+      (goto-char pos)
+      (org-show-context 'agenda)
+      (org-add-note))))
+
+(defun org-mru-clock--show-narrowed (task)
+  "Show TASK (cons of description and marker) narrowed."
+  (let ((window (selected-window))
+        (buffer (save-window-excursion
+                  ;; TODO: &optional noselect in org-mru-clock--goto
+                  ;; so we don't have to do this dance?
+                  (org-mru-clock--goto task)
+                  (current-buffer))))
+    (pop-to-buffer buffer)
+    (org-narrow-to-subtree)
+    (select-window window)))
+
 (eval-after-load 'ivy
   '(ivy-set-actions 'org-mru-clock-in
-                    '(("g" org-mru-clock--goto "goto"))))
+                    '(("g" org-mru-clock--goto "goto")
+                      ("z" org-mru-clock--add-note "note")
+                      ("SPC" org-mru-clock--show-narrowed "show"))))
 
 (defun org-mru-clock--read (prompt collection action caller)
   "Completing-read helper `org-mru-clock-in'.
