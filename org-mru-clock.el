@@ -250,10 +250,11 @@ filled first.  Optional argument N as in `org-mru-clock'."
   (interactive "P")
   (org-mru-clock-to-history n)
   (let ((m (org-clock-select-task "Select recent task: ")))
-    (switch-to-buffer (marker-buffer m))
-    (goto-char (marker-position m))
-    (org-up-element)
-    (org-show-subtree)))
+    (when m
+      (switch-to-buffer (marker-buffer m))
+      (goto-char (marker-position m))
+      (org-up-element)
+      (org-show-subtree))))
 
 (defun org-mru-clock-format-entry ()
   "Return the parent heading string appended to the heading at point."
