@@ -136,7 +136,7 @@ agenda files, or you can use your own file filter."
 (defun org-mru-clock-exclude-done-and-archived ()
   "Example function for `org-mru-clock-predicate', excluding DONE and :ARCHIVE:."
   (not (or (org-entry-is-done-p)
-           (member org-archive-tag (org-get-tags-at)))))
+           (member org-archive-tag (org-get-tags)))))
 
 (defun org-mru-clock-take (n l)
   "Take N elements from list L."
