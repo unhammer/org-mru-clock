@@ -283,9 +283,26 @@ e.g.
 
 will capture anything that starts with a number followed by space
 with the \"a\" template, and anything else with the \"b\"
-template.  The first matching regex is used."
+template.  The first matching regex is used.
+
+If you only use the key \"a\" for tasks captured with
+org-mru-clock, you may want to add it to
+`org-capture-templates-contexts' with `org-mru-clock-capturing',
+e.g.
+
+ (setq org-capture-templates-contexts
+       '((\"a\" (org-mru-clock-capturing)))"
   :group 'org-mru-clock
   :type '(alist :key-type string :value-type string))
+
+(defvar org-mru-clock--capturing nil
+  "This is true while we are capturing a new task.")
+
+(defun org-mru-clock-capturing ()
+  "Return non-nil iff we are capturing a new task.
+For use as an `org-capture-templates-contexts' for the templates
+in your `org-mru-clock-capture-if-no-match'."
+  org-mru-clock--capturing)
 
 (defun org-mru-clock--capture (initial)
   "Create a new task from the text entered.
@@ -298,7 +315,8 @@ that as the %i capture text."
              do
              (when (string-match-p (car c) initial)
                (setq matched t)
-               (let ((org-capture-initial initial))
+               (let ((org-capture-initial initial)
+                     (org-mru-clock--capturing t))
                  (org-capture nil (cdr c)))))
     (unless matched
       (error "`org-mru-clock--capture' called, but `org-mru-clock-capture-if-no-match' is nil"))))
