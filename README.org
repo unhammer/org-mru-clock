@@ -1,6 +1,7 @@
 #+TITLE: org-mru-clock
 
 [[https://melpa.org/#/org-mru-clock][https://melpa.org/packages/org-mru-clock-badge.svg]]
+[[https://stable.melpa.org/#/org-mru-clock][https://stable.melpa.org/packages/org-mru-clock-badge.svg]]
 
 Do you often clock in to many different little tasks? Are you annoyed
 that you can't just clock in to one of your most recent tasks after
