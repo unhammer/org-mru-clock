@@ -3,7 +3,7 @@
 ;; Copyright (C) 2016--2019 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
-;; Version: 0.4.2
+;; Version: 0.4.3
 ;; Package-Requires: ((emacs "24.3"))
 ;; URL: https://github.com/unhammer/org-mru-clock
 ;; Keywords: convenience, calendar
@@ -242,6 +242,15 @@ Optional argument N as in `org-mru-clock'."
                                 (org-mru-clock n)
                               history))))
 
+(defun org-mru-clock-select-workaround-history ()
+  "Workaround bug in `org-clock-select-task'.
+That function reuses letters ?c ?i ?d for history, but they are
+reserved for current/interrupted/default tasks.  So truncate
+history so we only get values up until the letter ?b.  If the bug
+gets fixed upstream, we could add a check for `org-version' here
+to return the full history."
+  (cl-subseq org-clock-history 0 43))
+
 ;;;###autoload
 (defun org-mru-clock-select-recent-task (&optional n)
   "Select a task that was recently associated with clocking.
@@ -249,7 +258,8 @@ Like `org-clock-select-task', but ensures `org-clock-history' is
 filled first.  Optional argument N as in `org-mru-clock'."
   (interactive "P")
   (org-mru-clock-to-history n)
-  (let ((m (org-clock-select-task "Select recent task: ")))
+  (let* ((org-clock-history (org-mru-clock-select-workaround-history))
+         (m (org-clock-select-task "Select recent task: ")))
     (when m
       (switch-to-buffer (marker-buffer m))
       (goto-char (marker-position m))
