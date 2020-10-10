@@ -1,10 +1,10 @@
-;;; org-mru-clock.el --- clock in/out of tasks with completion and persistent history -*- lexical-binding: t -*-
+;;; org-mru-clock.el --- Clock in/out of tasks with completion and persistent history -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2016--2019 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
-;; Version: 0.4.3
-;; Package-Requires: ((emacs "24.3"))
+;; Version: 0.4.4
+;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/unhammer/org-mru-clock
 ;; Keywords: convenience, calendar
 
@@ -249,7 +249,7 @@ reserved for current/interrupted/default tasks.  So truncate
 history so we only get values up until the letter ?b.  If the bug
 gets fixed upstream, we could add a check for `org-version' here
 to return the full history."
-  (cl-subseq org-clock-history 0 43))
+  (seq-take org-clock-history 43))
 
 ;;;###autoload
 (defun org-mru-clock-select-recent-task (&optional n)
