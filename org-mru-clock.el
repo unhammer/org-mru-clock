@@ -3,7 +3,7 @@
 ;; Copyright (C) 2016--2019 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
-;; Version: 0.4.4
+;; Version: 0.5.0
 ;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/unhammer/org-mru-clock
 ;; Keywords: convenience, calendar
@@ -105,13 +105,20 @@ Popular choices include `ivy-completing-read', `ido-completing-read', and
   :group 'org-mru-clock
   :type 'boolean)
 
-(defcustom org-mru-clock-keep-formatting nil
-  "Keep faces (and other properties) from entries before showing them.
-If this is set to t, entries will show up using the faces they
-had in the org file.  If nil, use the regular face of the
-`org-mru-clock-completing-read' function."
+(defcustom org-mru-clock-format-function #'substring-no-properties
+  "Function to alter formatting of an entry in the clock-in list.
+The function is called in the org buffer with point at the
+relevant heading.  Set to `substring' to keep faces (and other
+properties) from entries before showing them (showing entries
+using the faces they had in the org file).  With the default
+`substring-no-properties', use whatever faces the
+`org-mru-clock-completing-read' function applies."
   :group 'org-mru-clock
-  :type 'boolean)
+  :type 'function)
+
+(make-obsolete-variable 'org-mru-clock-keep-formatting
+                        "use org-mru-clock-format-function instead"
+                        "0.5.0")
 
 (defcustom org-mru-clock-predicate nil
   "Function returning nil when the task at point should be excluded.
@@ -277,9 +284,7 @@ filled first.  Optional argument N as in `org-mru-clock'."
                           (format " (%s)" parent)
                         ""))
          (with-parent (concat this parent-post)))
-    (if org-mru-clock-keep-formatting
-        with-parent
-      (substring-no-properties with-parent))))
+    (funcall org-mru-clock-format-function with-parent)))
 
 (defcustom org-mru-clock-capture-if-no-match nil
   "If non-nil, `org-capture' a new task on non-matching input.
