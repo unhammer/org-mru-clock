@@ -435,7 +435,10 @@ ACTION and CALLER as in `ivy-read'."
                               (mapcar #'car collection)
                               nil      ; PREDICATE
                               require-match))
-             (match (assoc choice collection)))
+             (match (assoc choice collection))
+             ;; Override any prescient or similar ordering, we want mru:
+             (selectrum-preprocess-candidates-function #'selectrum-default-candidate-preprocess-function)
+             (selectrum-refine-candidates-function #'selectrum-default-candidate-refine-function))
         (funcall action (or match choice)))))))
 
 (defun org-mru-clock--collect-history (history)
