@@ -3,7 +3,7 @@
 ;; Copyright (C) 2016--2019 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
-;; Version: 0.5.0
+;; Version: 0.6.0
 ;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/unhammer/org-mru-clock
 ;; Keywords: convenience, calendar
@@ -94,9 +94,11 @@ has enough entries."
   :type 'integer)
 
 (defcustom org-mru-clock-completing-read completing-read-function
-  "Like `completing-read-function', but only used in `org-mru-clock' functions.
-Popular choices include `ivy-completing-read', `ido-completing-read', and
-`helm-comp-read'"
+  "A `completing-read-function', but only used in `org-mru-clock' functions.
+Popular choices include
+`ivy-completing-read', `ido-completing-read', `selectrum-completing-read'
+and `helm--completing-read-default' (don't use `helm-comp-read' –
+it doesn't conform to the `completing-read' API)"
   :group 'org-mru-clock
   :type 'function)
 
@@ -368,8 +370,10 @@ string."
      (error (format "org-mru-clock--clock-in called with TASK of unexpected type: %S"
                     task)))))
 
-(defun org-mru-clock--goto (task)
+(defun org-mru-clock-goto (task)
   "Go to buffer and position of the TASK (cons of description and marker)."
+  (interactive (list (org-mru-clock--completing-read)))
+  (message "goto %S" task)
   (let ((m (cdr task)))
     (switch-to-buffer (org-base-buffer (marker-buffer m)))
     (if (or (< m (point-min)) (> m (point-max))) (widen))
@@ -379,8 +383,9 @@ string."
     (org-cycle-hide-drawers 'children)
     (org-reveal)))
 
-(defun org-mru-clock--add-note (task)
+(defun org-mru-clock-add-note (task)
   "Add a time-stamped note to TASK (cons of description and marker)."
+  (interactive (list (org-mru-clock--completing-read)))
   (let* ((marker (cdr task))
 	 (buffer (marker-buffer marker))
 	 (pos (marker-position marker))
@@ -391,13 +396,14 @@ string."
       (org-show-context 'agenda)
       (org-add-note))))
 
-(defun org-mru-clock--show-narrowed (task)
+(defun org-mru-clock-show-narrowed (task)
   "Show TASK (cons of description and marker) narrowed."
+  (interactive (list (org-mru-clock--completing-read)))
   (let ((window (selected-window))
         (buffer (save-window-excursion
-                  ;; TODO: &optional noselect in org-mru-clock--goto
+                  ;; TODO: &optional noselect in org-mru-clock-goto
                   ;; so we don't have to do this dance?
-                  (org-mru-clock--goto task)
+                  (org-mru-clock-goto task)
                   (current-buffer))))
     (pop-to-buffer buffer)
     (org-narrow-to-subtree)
@@ -405,41 +411,51 @@ string."
 
 (eval-after-load 'ivy
   '(ivy-set-actions 'org-mru-clock-in
-                    '(("g" org-mru-clock--goto "goto")
-                      ("z" org-mru-clock--add-note "note")
-                      ("SPC" org-mru-clock--show-narrowed "show"))))
+                    '(("g" org-mru-clock-goto "goto")
+                      ("z" org-mru-clock-add-note "note")
+                      ("SPC" org-mru-clock-show-narrowed "show"))))
 
-(defun org-mru-clock--read (prompt collection action caller)
-  "Completing-read helper `org-mru-clock-in'.
-Support extra actions if we're using ivy.
-PROMPT and COLLECTION as in `completing-read',
-ACTION and CALLER as in `ivy-read'."
-  (let ((require-match (not org-mru-clock-capture-if-no-match)))
-    (cond
-     ((eq org-mru-clock-completing-read #'ivy-completing-read)
-      (ivy-read prompt
-                collection
-                :action action
-                :require-match require-match
-                :caller caller))
-     ((eq org-mru-clock-completing-read #'helm-comp-read)
-      (let* ((choice (helm-comp-read
-                      prompt
-                      (mapcar #'car collection)
-                      :must-match require-match))
-             (match (assoc choice collection)))
-        (funcall action (or match choice))))
-     (t          ; assume arguments compatible with `completing-read':
-      (let* ((choice (funcall org-mru-clock-completing-read
-                              prompt
-                              (mapcar #'car collection)
-                              nil      ; PREDICATE
-                              require-match))
-             (match (assoc choice collection))
-             ;; Override any prescient or similar ordering, we want mru:
-             (selectrum-preprocess-candidates-function #'selectrum-default-candidate-preprocess-function)
-             (selectrum-refine-candidates-function #'selectrum-default-candidate-refine-function))
-        (funcall action (or match choice)))))))
+(defvar org-mru-clock--actions
+  (let ((map (make-sparse-keymap)))
+    (define-key map "g" #'org-mru-clock-goto)
+    (define-key map "z" #'org-mru-clock-add-note)
+    (define-key map " " #'org-mru-clock-show-narrowed)
+    map))
+
+(defun org-mru-clock-embark-minibuffer-hook ()
+  "Add to `minibuffer-setup-hook' if using Embark."
+  (when (eq this-command 'org-mru-clock-in)
+    (setq-local embark-overriding-keymap org-mru-clock--actions)))
+
+(defun org-mru-clock--completing-read ()
+  "Pick a task using `org-mru-clock-completing-read'."
+  (when (eq org-mru-clock-completing-read #'helm-comp-read)
+    (error "Please set org-mru-clock-completing-read to helm--completing-read-default (helm-comp-read not supported)"))
+  (let ((require-match (not org-mru-clock-capture-if-no-match))
+        (collection (org-mru-clock--collection))
+        ;; Ensure we keep our mru sort order:
+        (selectrum-should-sort-p nil))
+    (when-let ((choice (funcall org-mru-clock-completing-read
+                               "Recent clocks: "
+                               collection
+                               nil ; PREDICATE
+                               require-match)))
+      (message "read %S, top of collection %S" choice (car collection))
+      (or (assoc choice collection)
+          ;; for org-mru-clock-capture-if-no-match, return just the entered text:
+          choice))))
+
+(defun org-mru-clock--collection ()
+  "Return a collection of recently used clocks for completing read.
+Respects `org-mru-clock-include-entry-at-point'."
+  (let* ((entry-at-point (org-mru-clock--collect-entry-at-point))
+         (entry-at-point-keys (mapcar #'car entry-at-point)))
+    ;; Possibly include entry-at-point, always keep it first, avoid duplicates:
+    (append entry-at-point
+            (cl-remove-if
+             (lambda (k) (member k entry-at-point-keys))
+             (org-mru-clock--collect-history org-clock-history)
+             :key #'car))))
 
 (defun org-mru-clock--collect-history (history)
   "Turn HISTORY into a collection usable for `completing-read'.
@@ -487,20 +503,8 @@ If `org-mru-clock-capture-if-no-match' is non-nil, we may create
 a new task from the text entered."
   (interactive "P")
   (org-mru-clock-to-history n)
-  (let* ((prompt "Recent clocks: ")
-         (entry-at-point (org-mru-clock--collect-entry-at-point))
-         (entry-at-point-keys (mapcar #'car entry-at-point))
-         ;; Possibly include entry-at-point, always keep it first, avoid duplicates:
-         (collection (append entry-at-point
-                             (cl-remove-if
-                              (lambda (k) (member k entry-at-point-keys))
-                              (org-mru-clock--collect-history org-clock-history)
-                              :key #'car))))
-    (org-mru-clock--read prompt
-                         collection
-                         #'org-mru-clock--clock-in
-                         #'org-mru-clock-in)))
-
+  (let ((this-command #'org-mru-clock-in))
+    (org-mru-clock--clock-in (org-mru-clock--completing-read))))
 
 (provide 'org-mru-clock)
 ;;; org-mru-clock.el ends here

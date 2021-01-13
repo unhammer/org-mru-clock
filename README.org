@@ -21,7 +21,8 @@ quick selection. This makes it a nice replacement for
 It uses =completing-read-function= (overridable with
 =org-mru-clock-completing-read=) on =org-mru-clock-in= to make
 clocking in faster. If you set that to =ivy-completing-read=, you can
-hit =M-o g= to visit to the task heading instead of clocking in.
+hit =M-o g= to visit to the task heading instead of clocking in (there
+are also Embark actions if you prefer that – see [[*Manual, loading on startup:][Usage]]).
 
 The list is sorted to keep the most recently clocked entry first,
 although if the entry at point is an org-mode heading (in an org file
@@ -73,6 +74,12 @@ If you want to use ivy for =org-mru-clock-in=:
 (setq org-mru-clock-completing-read #'ivy-completing-read)
 #+END_SRC
 
+If you use the [[https://github.com/oantolin/embark/][embark]] package, you can add actions with:
+
+#+BEGIN_SRC emacs-lisp
+(add-hook 'minibuffer-setup-hook #'org-mru-clock-embark-minibuffer-hook)
+#+END_SRC
+
 ** With use-package
 
 If you prefer =use-package=, the above settings would be:
@@ -82,9 +89,10 @@ If you prefer =use-package=, the above settings would be:
   :ensure t
   :bind* (("C-c C-x i" . org-mru-clock-in)
           ("C-c C-x C-j" . org-mru-clock-select-recent-task))
-  :init
+  :config
   (setq org-mru-clock-how-many 100
-        org-mru-clock-completing-read #'ivy-completing-read))
+        org-mru-clock-completing-read #'ivy-completing-read)
+  (add-hook 'minibuffer-setup-hook #'org-mru-clock-embark-minibuffer-hook))
 #+END_SRC
 
 ** Other org-mru-clock settings
