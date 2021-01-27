@@ -373,7 +373,6 @@ string."
 (defun org-mru-clock-goto (task)
   "Go to buffer and position of the TASK (cons of description and marker)."
   (interactive (list (org-mru-clock--completing-read)))
-  (message "goto %S" task)
   (let ((m (cdr task)))
     (switch-to-buffer (org-base-buffer (marker-buffer m)))
     (if (or (< m (point-min)) (> m (point-max))) (widen))
@@ -440,7 +439,6 @@ string."
                                collection
                                nil ; PREDICATE
                                require-match)))
-      (message "read %S, top of collection %S" choice (car collection))
       (or (assoc choice collection)
           ;; for org-mru-clock-capture-if-no-match, return just the entered text:
           choice))))
