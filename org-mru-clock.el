@@ -226,7 +226,7 @@ N defaults to `org-mru-clock-how-many'."
            (n (or n org-mru-clock-how-many))
            (clocks (cl-mapcan #'org-mru-clock--find-clocks (funcall org-mru-clock-files)))
            (sort-pred (lambda (a b) (time-less-p (cdr b)
-                                                 (cdr a))))
+                                            (cdr a))))
            (sorted (mapcar #'car (sort clocks sort-pred)))
            (uniq (org-mru-clock-take-uniq
                   n
@@ -425,6 +425,10 @@ string."
   "Add to `minibuffer-setup-hook' if using Embark."
   (when (eq this-command 'org-mru-clock-in)
     (setq-local embark-overriding-keymap org-mru-clock--actions)))
+
+(eval-when-compile
+  ;; Ensure we can dynamically let-bind this even when compiled with lexical-let
+  (defvar selectrum-should-sort-p))
 
 (defun org-mru-clock--completing-read ()
   "Pick a task using `org-mru-clock-completing-read'."
