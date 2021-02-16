@@ -1,10 +1,10 @@
 ;;; org-mru-clock.el --- Clock in/out of tasks with completion and persistent history -*- lexical-binding: t -*-
 
-;; Copyright (C) 2016--2019 Kevin Brubeck Unhammer
+;; Copyright (C) 2016--2021 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
 ;; Version: 0.6.0
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "26.1"))
 ;; URL: https://github.com/unhammer/org-mru-clock
 ;; Keywords: convenience, calendar
 
@@ -395,6 +395,24 @@ string."
       (org-show-context 'agenda)
       (org-add-note))))
 
+(defun org-mru-clock-add-backlink (task)
+  "Add a link back to current location to TASK (cons of description and marker)."
+  (interactive (list (org-mru-clock--completing-read)))
+  (let* ((link (org-store-link nil))
+         (marker (cdr task))
+	 (buffer (marker-buffer marker))
+	 (pos (marker-position marker))
+	 (inhibit-read-only t))
+    (with-current-buffer buffer
+      (widen)
+      (goto-char pos)
+      (org-show-context 'agenda)
+      (org-end-of-meta-data 'full)
+      (indent-for-tab-command)
+      (insert (format "%s\n" link))
+      (indent-for-tab-command)
+      (message "Stored a link under %s" (car task)))))
+
 (defun org-mru-clock-show-narrowed (task)
   "Show TASK (cons of description and marker) narrowed."
   (interactive (list (org-mru-clock--completing-read)))
@@ -412,13 +430,15 @@ string."
   '(ivy-set-actions 'org-mru-clock-in
                     '(("g" org-mru-clock-goto "goto")
                       ("z" org-mru-clock-add-note "note")
-                      ("SPC" org-mru-clock-show-narrowed "show"))))
+                      ("SPC" org-mru-clock-show-narrowed "show")
+                      ("l" org-mru-clock-add-backlink "link"))))
 
 (defvar org-mru-clock--actions
   (let ((map (make-sparse-keymap)))
     (define-key map "g" #'org-mru-clock-goto)
     (define-key map "z" #'org-mru-clock-add-note)
     (define-key map " " #'org-mru-clock-show-narrowed)
+    (define-key map "l" #'org-mru-clock-add-backlink)
     map))
 
 (defun org-mru-clock-embark-minibuffer-hook ()
