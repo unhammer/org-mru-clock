@@ -408,9 +408,10 @@ string."
       (goto-char pos)
       (org-show-context 'agenda)
       (org-end-of-meta-data 'full)
+      (insert "\n")
+      (backward-char 1)
       (indent-for-tab-command)
-      (insert (format "%s\n" link))
-      (indent-for-tab-command)
+      (insert link)
       (message "Stored a link under %s" (car task)))))
 
 (defun org-mru-clock-show-narrowed (task)
