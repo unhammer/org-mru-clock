@@ -449,6 +449,7 @@ string."
 
 (eval-when-compile
   ;; Ensure we can dynamically let-bind this even when compiled with lexical-let
+  (defvar selectrum-should-sort)
   (defvar selectrum-should-sort-p))
 
 (defun org-mru-clock--completing-read ()
@@ -458,6 +459,7 @@ string."
   (let ((require-match (not org-mru-clock-capture-if-no-match))
         (collection (org-mru-clock--collection))
         ;; Ensure we keep our mru sort order:
+        (selectrum-should-sort nil)
         (selectrum-should-sort-p nil))
     (when-let ((choice (funcall org-mru-clock-completing-read
                                "Recent clocks: "
