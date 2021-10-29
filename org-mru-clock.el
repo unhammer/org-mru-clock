@@ -434,18 +434,30 @@ string."
                       ("SPC" org-mru-clock-show-narrowed "show")
                       ("l" org-mru-clock-add-backlink "link"))))
 
-(defvar org-mru-clock--actions
+(defun org-mru-clock--actions-map (parent)
+  "Add `org-mru-clock'-related keybindings to PARENT keymap.
+For use with embark and similar."
   (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map parent)
     (define-key map "g" #'org-mru-clock-goto)
     (define-key map "z" #'org-mru-clock-add-note)
     (define-key map " " #'org-mru-clock-show-narrowed)
     (define-key map "l" #'org-mru-clock-add-backlink)
     map))
 
+(defvar org-mru-clock--embark-map nil)
+
 (defun org-mru-clock-embark-minibuffer-hook ()
   "Add to `minibuffer-setup-hook' if using Embark."
+  ;; TODO: Would it be better to define an "action type" for org-entries?
   (when (eq this-command 'org-mru-clock-in)
-    (setq-local embark-overriding-keymap org-mru-clock--actions)))
+    (unless org-mru-clock--embark-map
+      (setq org-mru-clock--embark-map
+            (org-mru-clock--actions-map embark-general-map)))
+    (setq-local embark-keymap-alist
+                (cons '(t . org-mru-clock--embark-map)
+                      (cl-remove-if (lambda (p) (eq (car p) t))
+                                    embark-keymap-alist)))))
 
 (eval-when-compile
   ;; Ensure we can dynamically let-bind this even when compiled with lexical-let
