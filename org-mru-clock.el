@@ -270,7 +270,7 @@ filled first.  Optional argument N as in `org-mru-clock'."
   (let* ((org-clock-history (org-mru-clock-select-workaround-history))
          (m (org-clock-select-task "Select recent task: ")))
     (when m
-      (switch-to-buffer (marker-buffer m))
+      (select-window (display-buffer (marker-buffer m)))
       (goto-char (marker-position m))
       (org-up-element)
       (org-show-subtree))))
@@ -374,7 +374,7 @@ string."
   "Go to buffer and position of the TASK (cons of description and marker)."
   (interactive (list (org-mru-clock--completing-read)))
   (let ((m (cdr task)))
-    (switch-to-buffer (org-base-buffer (marker-buffer m)))
+    (select-window (display-buffer (org-base-buffer (marker-buffer m))))
     (if (or (< m (point-min)) (> m (point-max))) (widen))
     (goto-char m)
     (org-show-entry)
