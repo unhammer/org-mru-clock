@@ -382,6 +382,12 @@ string."
     (org-cycle-hide-drawers 'children)
     (org-reveal)))
 
+(defun org-mru-clock-in-pomodoro (task)
+  "Clock in to TASK and start a pomodoro timer."
+  (interactive (list (org-mru-clock--completing-read)))
+  (org-mru-clock--clock-in task)
+  (org-pomodoro-start))
+
 (defun org-mru-clock-add-note (task)
   "Add a time-stamped note to TASK (cons of description and marker)."
   (interactive (list (org-mru-clock--completing-read)))
@@ -440,6 +446,7 @@ For use with embark and similar."
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map parent)
     (define-key map "g" #'org-mru-clock-goto)
+    (define-key map "p" #'org-mru-clock-in-pomodoro)
     (define-key map "z" #'org-mru-clock-add-note)
     (define-key map " " #'org-mru-clock-show-narrowed)
     (define-key map "l" #'org-mru-clock-add-backlink)
