@@ -1,6 +1,6 @@
 ;;; org-mru-clock.el --- Clock in/out of tasks with completion and persistent history -*- lexical-binding: t -*-
 
-;; Copyright (C) 2016--2021 Kevin Brubeck Unhammer
+;; Copyright (C) 2016--2024 Kevin Brubeck Unhammer
 
 ;; Author: Kevin Brubeck Unhammer <unhammer@fsfe.org>
 ;; Version: 0.6.1
@@ -393,7 +393,11 @@ string."
       (widen)
       (goto-char pos)
       (org-show-context 'agenda)
-      (org-add-note))))
+      (call-interactively 'org-add-note)
+      ;; `org-add-note' doesn't actually open the note, just adds
+      ;; itself to post-command-hook, so run that to force popping up
+      ;; the note (otherwise this can fail when run through embark):
+      (run-hooks 'post-command-hook))))
 
 (defun org-mru-clock-add-backlink (task)
   "Add a link back to current location to TASK (cons of description and marker)."
